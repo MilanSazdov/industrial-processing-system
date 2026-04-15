@@ -1,0 +1,85 @@
+## =============================================
+##  .NET Framework / Visual Studio .gitignore
+## =============================================
+
+# --- Build outputs ---
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+# --- Visual Studio ---
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+
+# --- Visual Studio cache/options ---
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+[Dd]ebugPublic/
+
+# --- MSBuild ---
+*.metaproj
+*.metaproj.tmp
+
+# --- NuGet ---
+packages/
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nuget.props
+*.nuget.targets
+project.lock.json
+project.fragment.lock.json
+
+# --- Rider / JetBrains ---
+.idea/
+*.sln.iml
+
+# --- ReSharper ---
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# --- User-specific files ---
+*.rsuser
+*.cache
+*.[Cc]ache
+
+# --- OS generated ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# --- Runtime generated files ---
+jobs.log
+reports/
+report_*.xml
+
+# --- Misc ---
+*.tmp
+*.temp
+*.bak
+*.swp
+~$*
+*.pidb
+*.svclog
+*.scc
