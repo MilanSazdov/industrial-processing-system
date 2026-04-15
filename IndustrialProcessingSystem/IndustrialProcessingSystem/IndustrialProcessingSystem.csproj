@@ -48,6 +48,7 @@
     <Compile Include="JobHandle.cs" />
     <Compile Include="JobType.cs" />
     <Compile Include="Program.cs" />
+    <Compile Include="SystemConfigLoader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
