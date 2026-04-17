@@ -367,6 +367,7 @@ namespace IndustrialProcessingSystem
                 lock (_logLock)
                 {
                     snapshot = _executionLog.ToList();
+                    _executionLog.Clear();
                 }
 
                 if (snapshot.Count == 0) return;
