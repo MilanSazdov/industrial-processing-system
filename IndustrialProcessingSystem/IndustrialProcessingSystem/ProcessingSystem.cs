@@ -10,7 +10,7 @@ using System.Xml.Linq;
 
 namespace IndustrialProcessingSystem
 {
-    public class ProcessingSystem
+    public class ProcessingSystem : IDisposable
     {
         private readonly SortedDictionary<int, Queue<Job>> _priorityQueue = new SortedDictionary<int, Queue<Job>>();
         private readonly object _queueLock = new object();
@@ -29,6 +29,12 @@ namespace IndustrialProcessingSystem
         private readonly List<Thread> _workers = new List<Thread>();
         private readonly Timer _reportTimer;
         private int _reportIndex;
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        private volatile bool _disposed;
+
+        private static readonly ThreadLocal<Random> _rng = new ThreadLocal<Random>(
+            () => new Random(Interlocked.Increment(ref _rngSeed)));
+        private static int _rngSeed = Environment.TickCount;
 
         public event Action<Guid, int> JobCompleted;
         public event Action<Guid, string> JobFailed;
@@ -65,8 +71,7 @@ namespace IndustrialProcessingSystem
             {
                 if (_currentQueueSize >= _maxQueueSize)
                 {
-                    Console.WriteLine($"[REJECTED] Queue full ({_currentQueueSize}/{_maxQueueSize}), job {job.Id} rejected.");
-                    return null;
+                    throw new InvalidOperationException($"Queue full ({_currentQueueSize}/{_maxQueueSize}), job {job.Id} rejected.");
                 }
 
                 var tcs = new TaskCompletionSource<int>();
@@ -119,14 +124,28 @@ namespace IndustrialProcessingSystem
 
         private void WorkerLoop()
         {
-            while (true)
+            while (!_cts.IsCancellationRequested)
             {
-                _jobAvailable.Wait();
+                try
+                {
+                    _jobAvailable.Wait(_cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
 
                 Job job = Dequeue();
                 if (job == null) continue;
 
-                ProcessJobWithRetry(job);
+                try
+                {
+                    ProcessJobWithRetry(job);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[{Thread.CurrentThread.Name}] Unexpected error processing job {job.Id}: {ex.Message}");
+                }
             }
         }
 
@@ -300,8 +319,7 @@ namespace IndustrialProcessingSystem
 
             Thread.Sleep(delay);
 
-            Random rng = new Random();
-            return rng.Next(0, 101);
+            return _rng.Value.Next(0, 101);
         }
 
         public IEnumerable<Job> GetTopJobs(int n)
@@ -330,53 +348,77 @@ namespace IndustrialProcessingSystem
 
         private void GenerateReport(object state)
         {
-            List<JobExecutionRecord> snapshot;
-            lock (_logLock)
+            try
             {
-                snapshot = _executionLog.ToList();
+                List<JobExecutionRecord> snapshot;
+                lock (_logLock)
+                {
+                    snapshot = _executionLog.ToList();
+                }
+
+                if (snapshot.Count == 0) return;
+
+                var completedByType = from record in snapshot
+                                      where record.Success
+                                      group record by record.Type into g
+                                      select new { Type = g.Key, Count = g.Count() };
+
+                var averageTimeByType = from record in snapshot
+                                        group record by record.Type into g
+                                        select new { Type = g.Key, AverageMs = g.Average(r => r.Duration.TotalMilliseconds) };
+
+                var failedByType = from record in snapshot
+                                   where !record.Success
+                                   group record by record.Type into g
+                                   orderby g.Key
+                                   select new { Type = g.Key, Count = g.Count() };
+
+                var report = new XDocument(
+                    new XElement("Report",
+                        new XAttribute("Timestamp", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")),
+                        new XElement("CompletedByType",
+                            completedByType.Select(x => new XElement("Type",
+                                new XAttribute("Name", x.Type),
+                                new XAttribute("Count", x.Count)))),
+                        new XElement("AverageTimeByType",
+                            averageTimeByType.Select(x => new XElement("Type",
+                                new XAttribute("Name", x.Type),
+                                new XAttribute("AverageMs", x.AverageMs.ToString("F1"))))),
+                        new XElement("FailedByType",
+                            failedByType.Select(x => new XElement("Type",
+                                new XAttribute("Name", x.Type),
+                                new XAttribute("Count", x.Count))))
+                    )
+                );
+
+                int index = Interlocked.Increment(ref _reportIndex) - 1;
+                string fileName = $"report_{index % 10}.xml";
+                string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+
+                report.Save(filePath);
+                Console.WriteLine($"[REPORT] Generated {fileName}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[REPORT ERROR] {ex.Message}");
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            _cts.Cancel();
+
+            foreach (Thread worker in _workers)
+            {
+                worker.Join(3000);
             }
 
-            if (snapshot.Count == 0) return;
-
-            var completedByType = from record in snapshot
-                                  where record.Success
-                                  group record by record.Type into g
-                                  select new { Type = g.Key, Count = g.Count() };
-
-            var averageTimeByType = from record in snapshot
-                                    group record by record.Type into g
-                                    select new { Type = g.Key, AverageMs = g.Average(r => r.Duration.TotalMilliseconds) };
-
-            var failedByType = from record in snapshot
-                               where !record.Success
-                               group record by record.Type into g
-                               orderby g.Key
-                               select new { Type = g.Key, Count = g.Count() };
-
-            var report = new XDocument(
-                new XElement("Report",
-                    new XAttribute("Timestamp", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")),
-                    new XElement("CompletedByType",
-                        completedByType.Select(x => new XElement("Type",
-                            new XAttribute("Name", x.Type),
-                            new XAttribute("Count", x.Count)))),
-                    new XElement("AverageTimeByType",
-                        averageTimeByType.Select(x => new XElement("Type",
-                            new XAttribute("Name", x.Type),
-                            new XAttribute("AverageMs", x.AverageMs.ToString("F1"))))),
-                    new XElement("FailedByType",
-                        failedByType.Select(x => new XElement("Type",
-                            new XAttribute("Name", x.Type),
-                            new XAttribute("Count", x.Count))))
-                )
-            );
-
-            int index = Interlocked.Increment(ref _reportIndex) - 1;
-            string fileName = $"report_{index % 10}.xml";
-            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-
-            report.Save(filePath);
-            Console.WriteLine($"[REPORT] Generated {fileName}");
+            _reportTimer.Dispose();
+            _jobAvailable.Dispose();
+            _cts.Dispose();
         }
     }
 }
