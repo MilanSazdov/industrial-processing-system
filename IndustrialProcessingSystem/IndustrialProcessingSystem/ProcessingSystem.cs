@@ -30,9 +30,9 @@ namespace IndustrialProcessingSystem
         private readonly Timer _reportTimer;
         private int _reportIndex;
         private readonly CancellationTokenSource _cts = new CancellationTokenSource();
-        private volatile bool _disposed;
+        private int _disposed;
 
-        private static readonly ThreadLocal<Random> _rng = new ThreadLocal<Random>(
+        private readonly ThreadLocal<Random> _rng = new ThreadLocal<Random>(
             () => new Random(Interlocked.Increment(ref _rngSeed)));
         private static int _rngSeed = Environment.TickCount;
 
@@ -60,15 +60,15 @@ namespace IndustrialProcessingSystem
 
         public JobHandle Submit(Job job)
         {
-            JobHandle existingHandle;
-            if (_jobHandles.TryGetValue(job.Id, out existingHandle))
-            {
-                Console.WriteLine($"[IDEMPOTENT] Job {job.Id} already submitted, returning existing handle.");
-                return existingHandle;
-            }
-
             lock (_queueLock)
             {
+                JobHandle existingHandle;
+                if (_jobHandles.TryGetValue(job.Id, out existingHandle))
+                {
+                    Console.WriteLine($"[IDEMPOTENT] Job {job.Id} already submitted, returning existing handle.");
+                    return existingHandle;
+                }
+
                 if (_currentQueueSize >= _maxQueueSize)
                 {
                     throw new InvalidOperationException($"Queue full ({_currentQueueSize}/{_maxQueueSize}), job {job.Id} rejected.");
@@ -77,11 +77,7 @@ namespace IndustrialProcessingSystem
                 var tcs = new TaskCompletionSource<int>();
                 var handle = new JobHandle(job.Id, tcs.Task);
 
-                if (!_jobHandles.TryAdd(job.Id, handle))
-                {
-                    return _jobHandles[job.Id];
-                }
-
+                _jobHandles[job.Id] = handle;
                 _tcsMap[job.Id] = tcs;
                 _jobRegistry[job.Id] = job;
 
@@ -103,23 +99,21 @@ namespace IndustrialProcessingSystem
         {
             lock (_queueLock)
             {
-                foreach (var kvp in _priorityQueue)
+                if (_priorityQueue.Count == 0) return null;
+
+                int firstKey = _priorityQueue.Keys.First();
+                Queue<Job> queue = _priorityQueue[firstKey];
+
+                Job job = queue.Dequeue();
+                _currentQueueSize--;
+
+                if (queue.Count == 0)
                 {
-                    if (kvp.Value.Count > 0)
-                    {
-                        Job job = kvp.Value.Dequeue();
-                        _currentQueueSize--;
-
-                        if (kvp.Value.Count == 0)
-                        {
-                            _priorityQueue.Remove(kvp.Key);
-                        }
-
-                        return job;
-                    }
+                    _priorityQueue.Remove(firstKey);
                 }
+
+                return job;
             }
-            return null;
         }
 
         private void WorkerLoop()
@@ -156,9 +150,10 @@ namespace IndustrialProcessingSystem
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
+                var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
                 var stopwatch = Stopwatch.StartNew();
 
-                Task<int> processingTask = Task.Run(() => ExecuteJob(job));
+                Task<int> processingTask = Task.Run(() => ExecuteJob(job, attemptCts.Token), attemptCts.Token);
                 Task timeoutTask = Task.Delay(timeoutMs);
                 Task winner = Task.WhenAny(processingTask, timeoutTask).Result;
 
@@ -166,6 +161,7 @@ namespace IndustrialProcessingSystem
 
                 if (winner == processingTask && processingTask.Status == TaskStatus.RanToCompletion)
                 {
+                    attemptCts.Dispose();
                     int result = processingTask.Result;
 
                     lock (_logLock)
@@ -182,18 +178,22 @@ namespace IndustrialProcessingSystem
                     }
 
                     TaskCompletionSource<int> tcs;
-                    if (_tcsMap.TryGetValue(job.Id, out tcs))
+                    if (_tcsMap.TryRemove(job.Id, out tcs))
                     {
                         tcs.TrySetResult(result);
                     }
 
-                    JobCompleted?.Invoke(job.Id, result);
+                    var completedHandler = JobCompleted;
+                    if (completedHandler != null) completedHandler(job.Id, result);
 
                     Console.WriteLine($"[{Thread.CurrentThread.Name}] COMPLETED {job.Type} job {job.Id} = {result} (attempt {attempt})");
                     return;
                 }
                 else
                 {
+                    attemptCts.Cancel();
+                    attemptCts.Dispose();
+
                     string reason = processingTask.IsFaulted
                         ? processingTask.Exception?.InnerException?.Message ?? "Unknown error"
                         : "Timeout";
@@ -211,19 +211,24 @@ namespace IndustrialProcessingSystem
                         });
                     }
 
-                    JobFailed?.Invoke(job.Id, reason);
+                    var failedHandler = JobFailed;
+                    if (failedHandler != null) failedHandler(job.Id, reason);
 
                     Console.WriteLine($"[{Thread.CurrentThread.Name}] FAILED {job.Type} job {job.Id} - {reason} (attempt {attempt}/{maxAttempts})");
 
                     if (attempt == maxAttempts)
                     {
-                        JobAborted?.Invoke(job.Id, reason);
+                        var abortedHandler = JobAborted;
+                        if (abortedHandler != null) abortedHandler(job.Id, reason);
 
                         TaskCompletionSource<int> tcs;
-                        if (_tcsMap.TryGetValue(job.Id, out tcs))
+                        if (_tcsMap.TryRemove(job.Id, out tcs))
                         {
                             tcs.TrySetException(new TimeoutException($"Job {job.Id} aborted after {maxAttempts} attempts."));
                         }
+
+                        JobHandle removed;
+                        _jobHandles.TryRemove(job.Id, out removed);
 
                         Console.WriteLine($"[{Thread.CurrentThread.Name}] ABORT {job.Type} job {job.Id}");
                     }
@@ -231,20 +236,20 @@ namespace IndustrialProcessingSystem
             }
         }
 
-        private int ExecuteJob(Job job)
+        private int ExecuteJob(Job job, CancellationToken token)
         {
             switch (job.Type)
             {
                 case JobType.Prime:
-                    return ExecutePrimeJob(job.Payload);
+                    return ExecutePrimeJob(job.Payload, token);
                 case JobType.IO:
-                    return ExecuteIOJob(job.Payload);
+                    return ExecuteIOJob(job.Payload, token);
                 default:
                     throw new InvalidOperationException($"Unknown job type: {job.Type}");
             }
         }
 
-        private int ExecutePrimeJob(string payload)
+        private int ExecutePrimeJob(string payload, CancellationToken token)
         {
             string cleaned = payload.Replace("_", "");
             string[] parts = cleaned.Split(',');
@@ -266,6 +271,8 @@ namespace IndustrialProcessingSystem
 
             if (numbers < 2) return 0;
 
+            token.ThrowIfCancellationRequested();
+
             int totalCount = 0;
             int rangeSize = (numbers - 1) / threadCount;
             var threads = new Thread[threadCount];
@@ -282,10 +289,14 @@ namespace IndustrialProcessingSystem
                     int localCount = 0;
                     for (int n = start; n <= end; n++)
                     {
+                        if (token.IsCancellationRequested) return;
                         if (IsPrime(n)) localCount++;
                     }
                     counts[threadIndex] = localCount;
-                });
+                })
+                {
+                    IsBackground = true
+                };
                 threads[t].Start();
             }
 
@@ -295,6 +306,7 @@ namespace IndustrialProcessingSystem
                 totalCount += counts[t];
             }
 
+            token.ThrowIfCancellationRequested();
             return totalCount;
         }
 
@@ -311,13 +323,14 @@ namespace IndustrialProcessingSystem
             return true;
         }
 
-        private int ExecuteIOJob(string payload)
+        private int ExecuteIOJob(string payload, CancellationToken token)
         {
             string cleaned = payload.Replace("_", "");
             string[] kv = cleaned.Split(':');
             int delay = int.Parse(kv[1].Trim());
 
-            Thread.Sleep(delay);
+            token.WaitHandle.WaitOne(delay);
+            token.ThrowIfCancellationRequested();
 
             return _rng.Value.Next(0, 101);
         }
@@ -406,8 +419,7 @@ namespace IndustrialProcessingSystem
 
         public void Dispose()
         {
-            if (_disposed) return;
-            _disposed = true;
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0) return;
 
             _cts.Cancel();
 
@@ -419,6 +431,7 @@ namespace IndustrialProcessingSystem
             _reportTimer.Dispose();
             _jobAvailable.Dispose();
             _cts.Dispose();
+            _rng.Dispose();
         }
     }
 }
