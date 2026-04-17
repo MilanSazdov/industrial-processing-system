@@ -55,7 +55,7 @@ namespace IndustrialProcessingSystem
                 worker.Start();
             }
 
-            _reportTimer = new Timer(GenerateReport, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+            _reportTimer = new Timer(GenerateReport, null, TimeSpan.FromMinutes(1), Timeout.InfiniteTimeSpan);
         }
 
         public JobHandle Submit(Job job)
@@ -203,6 +203,17 @@ namespace IndustrialProcessingSystem
                     try { processingTask.Wait(); } catch { }
 
                     attemptCts.Dispose();
+
+                    // If the system is shutting down, don't retry — exit immediately.
+                    if (_cts.IsCancellationRequested)
+                    {
+                        TaskCompletionSource<int> tcs;
+                        if (_tcsMap.TryRemove(job.Id, out tcs))
+                        {
+                            tcs.TrySetCanceled();
+                        }
+                        return;
+                    }
 
                     string reason = processingTask.IsFaulted
                         ? processingTask.Exception?.InnerException?.Message ?? "Unknown error"
@@ -418,7 +429,7 @@ namespace IndustrialProcessingSystem
                 );
 
                 int index = Interlocked.Increment(ref _reportIndex) - 1;
-                string fileName = $"report_{index % 10}.xml";
+                string fileName = $"report_{(index & 0x7FFFFFFF) % 10}.xml";
                 string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
 
                 report.Save(filePath);
@@ -427,6 +438,11 @@ namespace IndustrialProcessingSystem
             catch (Exception ex)
             {
                 Console.WriteLine($"[REPORT ERROR] {ex.Message}");
+            }
+            finally
+            {
+                try { _reportTimer.Change(TimeSpan.FromMinutes(1), Timeout.InfiniteTimeSpan); }
+                catch (ObjectDisposedException) { }
             }
         }
 
