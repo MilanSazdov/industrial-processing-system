@@ -10,7 +10,7 @@ using System.Xml.Linq;
 
 namespace IndustrialProcessingSystem
 {
-    public class ProcessingSystem
+    public class ProcessingSystem : IDisposable
     {
         private readonly SortedDictionary<int, Queue<Job>> _priorityQueue = new SortedDictionary<int, Queue<Job>>();
         private readonly object _queueLock = new object();
@@ -29,17 +29,20 @@ namespace IndustrialProcessingSystem
         private readonly List<Thread> _workers = new List<Thread>();
         private readonly Timer _reportTimer;
         private int _reportIndex;
+        private readonly CancellationTokenSource _cts = new CancellationTokenSource();
+        private int _disposed;
 
-        private readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
-        private readonly string _logFilePath;
+        private readonly ThreadLocal<Random> _rng = new ThreadLocal<Random>(
+            () => new Random(Interlocked.Increment(ref _rngSeed)));
+        private static int _rngSeed = Environment.TickCount;
 
         public event Action<Guid, int> JobCompleted;
         public event Action<Guid, string> JobFailed;
+        public event Action<Guid, string> JobAborted;
 
         public ProcessingSystem(int workerCount, int maxQueueSize)
         {
             _maxQueueSize = maxQueueSize;
-            _logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "jobs.log");
 
             for (int i = 0; i < workerCount; i++)
             {
@@ -52,34 +55,29 @@ namespace IndustrialProcessingSystem
                 worker.Start();
             }
 
-            _reportTimer = new Timer(GenerateReport, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+            _reportTimer = new Timer(GenerateReport, null, TimeSpan.FromMinutes(1), Timeout.InfiniteTimeSpan);
         }
 
         public JobHandle Submit(Job job)
         {
-            JobHandle existingHandle;
-            if (_jobHandles.TryGetValue(job.Id, out existingHandle))
-            {
-                Console.WriteLine($"[IDEMPOTENT] Job {job.Id} already submitted, returning existing handle.");
-                return existingHandle;
-            }
-
             lock (_queueLock)
             {
+                JobHandle existingHandle;
+                if (_jobHandles.TryGetValue(job.Id, out existingHandle))
+                {
+                    Console.WriteLine($"[IDEMPOTENT] Job {job.Id} already submitted, returning existing handle.");
+                    return existingHandle;
+                }
+
                 if (_currentQueueSize >= _maxQueueSize)
                 {
-                    Console.WriteLine($"[REJECTED] Queue full ({_currentQueueSize}/{_maxQueueSize}), job {job.Id} rejected.");
-                    return null;
+                    throw new InvalidOperationException($"Queue full ({_currentQueueSize}/{_maxQueueSize}), job {job.Id} rejected.");
                 }
 
                 var tcs = new TaskCompletionSource<int>();
                 var handle = new JobHandle(job.Id, tcs.Task);
 
-                if (!_jobHandles.TryAdd(job.Id, handle))
-                {
-                    return _jobHandles[job.Id];
-                }
-
+                _jobHandles[job.Id] = handle;
                 _tcsMap[job.Id] = tcs;
                 _jobRegistry[job.Id] = job;
 
@@ -91,45 +89,57 @@ namespace IndustrialProcessingSystem
                 }
                 queue.Enqueue(job);
                 _currentQueueSize++;
-            }
 
-            _jobAvailable.Release();
-            return _jobHandles[job.Id];
+                _jobAvailable.Release();
+                return handle;
+            }
         }
 
         private Job Dequeue()
         {
             lock (_queueLock)
             {
-                foreach (var kvp in _priorityQueue)
+                if (_priorityQueue.Count == 0) return null;
+
+                int firstKey = _priorityQueue.Keys.First();
+                Queue<Job> queue = _priorityQueue[firstKey];
+
+                Job job = queue.Dequeue();
+                _currentQueueSize--;
+
+                if (queue.Count == 0)
                 {
-                    if (kvp.Value.Count > 0)
-                    {
-                        Job job = kvp.Value.Dequeue();
-                        _currentQueueSize--;
-
-                        if (kvp.Value.Count == 0)
-                        {
-                            _priorityQueue.Remove(kvp.Key);
-                        }
-
-                        return job;
-                    }
+                    _priorityQueue.Remove(firstKey);
                 }
+
+                return job;
             }
-            return null;
         }
 
         private void WorkerLoop()
         {
-            while (true)
+            while (!_cts.IsCancellationRequested)
             {
-                _jobAvailable.Wait();
+                try
+                {
+                    _jobAvailable.Wait(_cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
 
                 Job job = Dequeue();
                 if (job == null) continue;
 
-                ProcessJobWithRetry(job);
+                try
+                {
+                    ProcessJobWithRetry(job);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[{Thread.CurrentThread.Name}] Unexpected error processing job {job.Id}: {ex.Message}");
+                }
             }
         }
 
@@ -140,16 +150,18 @@ namespace IndustrialProcessingSystem
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
+                var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
                 var stopwatch = Stopwatch.StartNew();
 
-                Task<int> processingTask = Task.Run(() => ExecuteJob(job));
-                Task timeoutTask = Task.Delay(timeoutMs);
+                Task<int> processingTask = Task.Run(() => ExecuteJob(job, attemptCts.Token), attemptCts.Token);
+                Task timeoutTask = Task.Delay(timeoutMs, attemptCts.Token);
                 Task winner = Task.WhenAny(processingTask, timeoutTask).Result;
 
                 stopwatch.Stop();
 
                 if (winner == processingTask && processingTask.Status == TaskStatus.RanToCompletion)
                 {
+                    attemptCts.Dispose();
                     int result = processingTask.Result;
 
                     lock (_logLock)
@@ -166,18 +178,43 @@ namespace IndustrialProcessingSystem
                     }
 
                     TaskCompletionSource<int> tcs;
-                    if (_tcsMap.TryGetValue(job.Id, out tcs))
+                    if (_tcsMap.TryRemove(job.Id, out tcs))
                     {
                         tcs.TrySetResult(result);
                     }
 
-                    JobCompleted?.Invoke(job.Id, result);
+                    JobHandle completedHandle;
+                    _jobHandles.TryRemove(job.Id, out completedHandle);
+                    Job completedJob;
+                    _jobRegistry.TryRemove(job.Id, out completedJob);
+
+                    var completedHandler = JobCompleted;
+                    if (completedHandler != null) completedHandler(job.Id, result);
 
                     Console.WriteLine($"[{Thread.CurrentThread.Name}] COMPLETED {job.Type} job {job.Id} = {result} (attempt {attempt})");
                     return;
                 }
                 else
                 {
+                    attemptCts.Cancel();
+
+                    // Wait for the task to acknowledge cancellation before retrying,
+                    // to avoid running multiple attempts concurrently.
+                    try { processingTask.Wait(); } catch { }
+
+                    attemptCts.Dispose();
+
+                    // If the system is shutting down, don't retry — exit immediately.
+                    if (_cts.IsCancellationRequested)
+                    {
+                        TaskCompletionSource<int> tcs;
+                        if (_tcsMap.TryRemove(job.Id, out tcs))
+                        {
+                            tcs.TrySetCanceled();
+                        }
+                        return;
+                    }
+
                     string reason = processingTask.IsFaulted
                         ? processingTask.Exception?.InnerException?.Message ?? "Unknown error"
                         : "Timeout";
@@ -195,19 +232,26 @@ namespace IndustrialProcessingSystem
                         });
                     }
 
-                    JobFailed?.Invoke(job.Id, reason);
+                    var failedHandler = JobFailed;
+                    if (failedHandler != null) failedHandler(job.Id, reason);
 
                     Console.WriteLine($"[{Thread.CurrentThread.Name}] FAILED {job.Type} job {job.Id} - {reason} (attempt {attempt}/{maxAttempts})");
 
                     if (attempt == maxAttempts)
                     {
-                        LogToFileAsync($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [ABORT] {job.Id}, {reason}");
+                        var abortedHandler = JobAborted;
+                        if (abortedHandler != null) abortedHandler(job.Id, reason);
 
                         TaskCompletionSource<int> tcs;
-                        if (_tcsMap.TryGetValue(job.Id, out tcs))
+                        if (_tcsMap.TryRemove(job.Id, out tcs))
                         {
                             tcs.TrySetException(new TimeoutException($"Job {job.Id} aborted after {maxAttempts} attempts."));
                         }
+
+                        JobHandle removed;
+                        _jobHandles.TryRemove(job.Id, out removed);
+                        Job removedJob;
+                        _jobRegistry.TryRemove(job.Id, out removedJob);
 
                         Console.WriteLine($"[{Thread.CurrentThread.Name}] ABORT {job.Type} job {job.Id}");
                     }
@@ -215,20 +259,20 @@ namespace IndustrialProcessingSystem
             }
         }
 
-        private int ExecuteJob(Job job)
+        private int ExecuteJob(Job job, CancellationToken token)
         {
             switch (job.Type)
             {
                 case JobType.Prime:
-                    return ExecutePrimeJob(job.Payload);
+                    return ExecutePrimeJob(job.Payload, token);
                 case JobType.IO:
-                    return ExecuteIOJob(job.Payload);
+                    return ExecuteIOJob(job.Payload, token);
                 default:
                     throw new InvalidOperationException($"Unknown job type: {job.Type}");
             }
         }
 
-        private int ExecutePrimeJob(string payload)
+        private int ExecutePrimeJob(string payload, CancellationToken token)
         {
             string cleaned = payload.Replace("_", "");
             string[] parts = cleaned.Split(',');
@@ -250,6 +294,8 @@ namespace IndustrialProcessingSystem
 
             if (numbers < 2) return 0;
 
+            token.ThrowIfCancellationRequested();
+
             int totalCount = 0;
             int rangeSize = (numbers - 1) / threadCount;
             var threads = new Thread[threadCount];
@@ -266,10 +312,14 @@ namespace IndustrialProcessingSystem
                     int localCount = 0;
                     for (int n = start; n <= end; n++)
                     {
+                        if (token.IsCancellationRequested) return;
                         if (IsPrime(n)) localCount++;
                     }
                     counts[threadIndex] = localCount;
-                });
+                })
+                {
+                    IsBackground = true
+                };
                 threads[t].Start();
             }
 
@@ -279,6 +329,7 @@ namespace IndustrialProcessingSystem
                 totalCount += counts[t];
             }
 
+            token.ThrowIfCancellationRequested();
             return totalCount;
         }
 
@@ -295,16 +346,16 @@ namespace IndustrialProcessingSystem
             return true;
         }
 
-        private int ExecuteIOJob(string payload)
+        private int ExecuteIOJob(string payload, CancellationToken token)
         {
             string cleaned = payload.Replace("_", "");
             string[] kv = cleaned.Split(':');
             int delay = int.Parse(kv[1].Trim());
 
-            Thread.Sleep(delay);
+            token.WaitHandle.WaitOne(delay);
+            token.ThrowIfCancellationRequested();
 
-            Random rng = new Random();
-            return rng.Next(0, 101);
+            return _rng.Value.Next(0, 101);
         }
 
         public IEnumerable<Job> GetTopJobs(int n)
@@ -331,74 +382,91 @@ namespace IndustrialProcessingSystem
             return job;
         }
 
-        private void LogToFileAsync(string message)
-        {
-            Task.Run(async () =>
-            {
-                await _fileLock.WaitAsync();
-                try
-                {
-                    using (var writer = new StreamWriter(_logFilePath, true))
-                    {
-                        await writer.WriteLineAsync(message);
-                    }
-                }
-                finally
-                {
-                    _fileLock.Release();
-                }
-            });
-        }
-
         private void GenerateReport(object state)
         {
-            List<JobExecutionRecord> snapshot;
-            lock (_logLock)
+            try
             {
-                snapshot = _executionLog.ToList();
+                List<JobExecutionRecord> snapshot;
+                lock (_logLock)
+                {
+                    snapshot = _executionLog.ToList();
+                    _executionLog.Clear();
+                }
+
+                if (snapshot.Count == 0) return;
+
+                var completedByType = from record in snapshot
+                                      where record.Success
+                                      group record by record.Type into g
+                                      select new { Type = g.Key, Count = g.Count() };
+
+                var averageTimeByType = from record in snapshot
+                                        group record by record.Type into g
+                                        select new { Type = g.Key, AverageMs = g.Average(r => r.Duration.TotalMilliseconds) };
+
+                var failedByType = from record in snapshot
+                                   where !record.Success
+                                   group record by record.Type into g
+                                   orderby g.Key
+                                   select new { Type = g.Key, Count = g.Count() };
+
+                var report = new XDocument(
+                    new XElement("Report",
+                        new XAttribute("Timestamp", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")),
+                        new XElement("CompletedByType",
+                            completedByType.Select(x => new XElement("Type",
+                                new XAttribute("Name", x.Type),
+                                new XAttribute("Count", x.Count)))),
+                        new XElement("AverageTimeByType",
+                            averageTimeByType.Select(x => new XElement("Type",
+                                new XAttribute("Name", x.Type),
+                                new XAttribute("AverageMs", x.AverageMs.ToString("F1"))))),
+                        new XElement("FailedByType",
+                            failedByType.Select(x => new XElement("Type",
+                                new XAttribute("Name", x.Type),
+                                new XAttribute("Count", x.Count))))
+                    )
+                );
+
+                int index = Interlocked.Increment(ref _reportIndex) - 1;
+                string fileName = $"report_{(index & 0x7FFFFFFF) % 10}.xml";
+                string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+
+                report.Save(filePath);
+                Console.WriteLine($"[REPORT] Generated {fileName}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[REPORT ERROR] {ex.Message}");
+            }
+            finally
+            {
+                try { _reportTimer.Change(TimeSpan.FromMinutes(1), Timeout.InfiniteTimeSpan); }
+                catch (ObjectDisposedException) { }
+            }
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.CompareExchange(ref _disposed, 1, 0) != 0) return;
+
+            _cts.Cancel();
+
+            foreach (Thread worker in _workers)
+            {
+                worker.Join(3000);
             }
 
-            if (snapshot.Count == 0) return;
+            foreach (var kvp in _tcsMap)
+            {
+                kvp.Value.TrySetCanceled();
+            }
+            _tcsMap.Clear();
 
-            var completedByType = from record in snapshot
-                                  where record.Success
-                                  group record by record.Type into g
-                                  select new { Type = g.Key, Count = g.Count() };
-
-            var averageTimeByType = from record in snapshot
-                                    group record by record.Type into g
-                                    select new { Type = g.Key, AverageMs = g.Average(r => r.Duration.TotalMilliseconds) };
-
-            var failedByType = from record in snapshot
-                               where !record.Success
-                               group record by record.Type into g
-                               orderby g.Key
-                               select new { Type = g.Key, Count = g.Count() };
-
-            var report = new XDocument(
-                new XElement("Report",
-                    new XAttribute("Timestamp", DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss")),
-                    new XElement("CompletedByType",
-                        completedByType.Select(x => new XElement("Type",
-                            new XAttribute("Name", x.Type),
-                            new XAttribute("Count", x.Count)))),
-                    new XElement("AverageTimeByType",
-                        averageTimeByType.Select(x => new XElement("Type",
-                            new XAttribute("Name", x.Type),
-                            new XAttribute("AverageMs", x.AverageMs.ToString("F1"))))),
-                    new XElement("FailedByType",
-                        failedByType.Select(x => new XElement("Type",
-                            new XAttribute("Name", x.Type),
-                            new XAttribute("Count", x.Count))))
-                )
-            );
-
-            int index = Interlocked.Increment(ref _reportIndex) - 1;
-            string fileName = $"report_{index % 10}.xml";
-            string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
-
-            report.Save(filePath);
-            Console.WriteLine($"[REPORT] Generated {fileName}");
+            _reportTimer.Dispose();
+            _jobAvailable.Dispose();
+            _cts.Dispose();
+            _rng.Dispose();
         }
     }
 }
