@@ -154,7 +154,7 @@ namespace IndustrialProcessingSystem
                 var stopwatch = Stopwatch.StartNew();
 
                 Task<int> processingTask = Task.Run(() => ExecuteJob(job, attemptCts.Token), attemptCts.Token);
-                Task timeoutTask = Task.Delay(timeoutMs);
+                Task timeoutTask = Task.Delay(timeoutMs, attemptCts.Token);
                 Task winner = Task.WhenAny(processingTask, timeoutTask).Result;
 
                 stopwatch.Stop();
@@ -456,6 +456,12 @@ namespace IndustrialProcessingSystem
             {
                 worker.Join(3000);
             }
+
+            foreach (var kvp in _tcsMap)
+            {
+                kvp.Value.TrySetCanceled();
+            }
+            _tcsMap.Clear();
 
             _reportTimer.Dispose();
             _jobAvailable.Dispose();
