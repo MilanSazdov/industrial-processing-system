@@ -4,10 +4,10 @@ namespace IndustrialProcessingSystem
 {
     public class Job
     {
-        public Guid Id { get; set; }
-        public JobType Type { get; set; }
-        public string Payload { get; set; }
-        public int Priority { get; set; }
+        public Guid Id { get; }
+        public JobType Type { get; }
+        public string Payload { get; }
+        public int Priority { get; }
 
         public Job(JobType type, string payload, int priority)
         {
