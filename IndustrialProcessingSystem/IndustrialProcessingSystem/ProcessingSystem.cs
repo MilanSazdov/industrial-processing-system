@@ -197,6 +197,11 @@ namespace IndustrialProcessingSystem
                 else
                 {
                     attemptCts.Cancel();
+
+                    // Wait for the task to acknowledge cancellation before retrying,
+                    // to avoid running multiple attempts concurrently.
+                    try { processingTask.Wait(); } catch { }
+
                     attemptCts.Dispose();
 
                     string reason = processingTask.IsFaulted
