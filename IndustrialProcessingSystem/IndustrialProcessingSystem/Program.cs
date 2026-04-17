@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace IndustrialProcessingSystem
 {
@@ -9,6 +11,8 @@ namespace IndustrialProcessingSystem
         private static readonly ThreadLocal<Random> _random = new ThreadLocal<Random>(
             () => new Random(Interlocked.Increment(ref _seed)));
         private static int _seed = Environment.TickCount;
+
+        private static readonly ConcurrentQueue<Task> _pendingLogTasks = new ConcurrentQueue<Task>();
 
         static void Main(string[] args)
         {
@@ -30,58 +34,64 @@ namespace IndustrialProcessingSystem
                 Console.WriteLine($"Initial jobs: {config.InitialJobs.Count}");
                 Console.WriteLine("===================================");
 
-                ProcessingSystem system = new ProcessingSystem(config.WorkerCount, config.MaxQueueSize);
+                var producerCts = new CancellationTokenSource();
 
-                system.JobCompleted += (id, result) =>
+                using (ProcessingSystem system = new ProcessingSystem(config.WorkerCount, config.MaxQueueSize))
                 {
-                    string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [COMPLETED] {id}, {result}";
-                    AppendLogAsync(logLine);
-                };
-
-                system.JobFailed += (id, reason) =>
-                {
-                    string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [FAILED] {id}, {reason}";
-                    AppendLogAsync(logLine);
-                };
-
-                system.JobAborted += (id, reason) =>
-                {
-                    string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [ABORT] {id}, {reason}";
-                    AppendLogAsync(logLine);
-                };
-
-                Console.WriteLine("Submitting initial jobs from config...");
-                foreach (var job in config.InitialJobs)
-                {
-                    try
+                    system.JobCompleted += (id, result) =>
                     {
-                        var handle = system.Submit(job);
-                        Console.WriteLine($"  Submitted [{job.Priority}] {job.Type} - {job.Payload} (Id: {job.Id})");
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        Console.WriteLine($"  [REJECTED] {job.Id}: {ex.Message}");
-                    }
-                }
-
-                Console.WriteLine("===================================");
-                Console.WriteLine($"Starting {config.WorkerCount} producer threads...");
-
-                for (int i = 0; i < config.WorkerCount; i++)
-                {
-                    int threadIndex = i;
-                    Thread producer = new Thread(() => ProducerLoop(system, threadIndex))
-                    {
-                        IsBackground = true,
-                        Name = $"Producer-{threadIndex}"
+                        string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [COMPLETED] {id}, {result}";
+                        EnqueueLog(logLine);
                     };
-                    producer.Start();
+
+                    system.JobFailed += (id, reason) =>
+                    {
+                        string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [FAILED] {id}, {reason}";
+                        EnqueueLog(logLine);
+                    };
+
+                    system.JobAborted += (id, reason) =>
+                    {
+                        string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [ABORT] {id}, {reason}";
+                        EnqueueLog(logLine);
+                    };
+
+                    Console.WriteLine("Submitting initial jobs from config...");
+                    foreach (var job in config.InitialJobs)
+                    {
+                        try
+                        {
+                            var handle = system.Submit(job);
+                            Console.WriteLine($"  Submitted [{job.Priority}] {job.Type} - {job.Payload} (Id: {job.Id})");
+                        }
+                        catch (InvalidOperationException ex)
+                        {
+                            Console.WriteLine($"  [REJECTED] {job.Id}: {ex.Message}");
+                        }
+                    }
+
+                    Console.WriteLine("===================================");
+                    Console.WriteLine($"Starting {config.WorkerCount} producer threads...");
+
+                    for (int i = 0; i < config.WorkerCount; i++)
+                    {
+                        int threadIndex = i;
+                        Thread producer = new Thread(() => ProducerLoop(system, threadIndex, producerCts.Token))
+                        {
+                            IsBackground = true,
+                            Name = $"Producer-{threadIndex}"
+                        };
+                        producer.Start();
+                    }
+
+                    Console.WriteLine("System running. Press Enter to exit.");
+                    Console.ReadLine();
+
+                    producerCts.Cancel();
+                    FlushPendingLogs();
                 }
 
-                Console.WriteLine("System running. Press Enter to exit.");
-                Console.ReadLine();
-
-                system.Dispose();
+                producerCts.Dispose();
                 Console.WriteLine("System shut down.");
             }
             catch (Exception ex)
@@ -91,9 +101,9 @@ namespace IndustrialProcessingSystem
             }
         }
 
-        private static void ProducerLoop(ProcessingSystem system, int threadIndex)
+        private static void ProducerLoop(ProcessingSystem system, int threadIndex, CancellationToken token)
         {
-            while (true)
+            while (!token.IsCancellationRequested)
             {
                 try
                 {
@@ -110,10 +120,11 @@ namespace IndustrialProcessingSystem
                     }
 
                     int delay = _random.Value.Next(500, 3000);
-                    Thread.Sleep(delay);
+                    token.WaitHandle.WaitOne(delay);
                 }
                 catch (Exception ex)
                 {
+                    if (token.IsCancellationRequested) break;
                     Console.WriteLine($"[Producer-{threadIndex}] Error: {ex.Message}");
                 }
             }
@@ -143,7 +154,22 @@ namespace IndustrialProcessingSystem
 
         private static readonly SemaphoreSlim _mainLogLock = new SemaphoreSlim(1, 1);
 
-        private static async void AppendLogAsync(string message)
+        private static void EnqueueLog(string message)
+        {
+            var task = AppendLogAsync(message);
+            _pendingLogTasks.Enqueue(task);
+        }
+
+        private static void FlushPendingLogs()
+        {
+            Task task;
+            while (_pendingLogTasks.TryDequeue(out task))
+            {
+                try { task.Wait(); } catch { }
+            }
+        }
+
+        private static async Task AppendLogAsync(string message)
         {
             await _mainLogLock.WaitAsync();
             try
