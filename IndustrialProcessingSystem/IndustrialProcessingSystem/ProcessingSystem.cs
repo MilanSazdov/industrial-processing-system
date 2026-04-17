@@ -183,6 +183,11 @@ namespace IndustrialProcessingSystem
                         tcs.TrySetResult(result);
                     }
 
+                    JobHandle completedHandle;
+                    _jobHandles.TryRemove(job.Id, out completedHandle);
+                    Job completedJob;
+                    _jobRegistry.TryRemove(job.Id, out completedJob);
+
                     var completedHandler = JobCompleted;
                     if (completedHandler != null) completedHandler(job.Id, result);
 
@@ -229,6 +234,8 @@ namespace IndustrialProcessingSystem
 
                         JobHandle removed;
                         _jobHandles.TryRemove(job.Id, out removed);
+                        Job removedJob;
+                        _jobRegistry.TryRemove(job.Id, out removedJob);
 
                         Console.WriteLine($"[{Thread.CurrentThread.Name}] ABORT {job.Type} job {job.Id}");
                     }
