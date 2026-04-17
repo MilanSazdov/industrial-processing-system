@@ -30,16 +30,13 @@ namespace IndustrialProcessingSystem
         private readonly Timer _reportTimer;
         private int _reportIndex;
 
-        private readonly SemaphoreSlim _fileLock = new SemaphoreSlim(1, 1);
-        private readonly string _logFilePath;
-
         public event Action<Guid, int> JobCompleted;
         public event Action<Guid, string> JobFailed;
+        public event Action<Guid, string> JobAborted;
 
         public ProcessingSystem(int workerCount, int maxQueueSize)
         {
             _maxQueueSize = maxQueueSize;
-            _logFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "jobs.log");
 
             for (int i = 0; i < workerCount; i++)
             {
@@ -201,7 +198,7 @@ namespace IndustrialProcessingSystem
 
                     if (attempt == maxAttempts)
                     {
-                        LogToFileAsync($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [ABORT] {job.Id}, {reason}");
+                        JobAborted?.Invoke(job.Id, reason);
 
                         TaskCompletionSource<int> tcs;
                         if (_tcsMap.TryGetValue(job.Id, out tcs))
@@ -329,25 +326,6 @@ namespace IndustrialProcessingSystem
             Job job;
             _jobRegistry.TryGetValue(id, out job);
             return job;
-        }
-
-        private void LogToFileAsync(string message)
-        {
-            Task.Run(async () =>
-            {
-                await _fileLock.WaitAsync();
-                try
-                {
-                    using (var writer = new StreamWriter(_logFilePath, true))
-                    {
-                        await writer.WriteLineAsync(message);
-                    }
-                }
-                finally
-                {
-                    _fileLock.Release();
-                }
-            });
         }
 
         private void GenerateReport(object state)

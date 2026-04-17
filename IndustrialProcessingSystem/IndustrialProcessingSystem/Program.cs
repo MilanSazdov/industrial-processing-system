@@ -44,6 +44,12 @@ namespace IndustrialProcessingSystem
                     AppendLogAsync(logLine);
                 };
 
+                system.JobAborted += (id, reason) =>
+                {
+                    string logLine = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [ABORT] {id}, {reason}";
+                    AppendLogAsync(logLine);
+                };
+
                 Console.WriteLine("Submitting initial jobs from config...");
                 foreach (var job in config.InitialJobs)
                 {
