@@ -89,10 +89,10 @@ namespace IndustrialProcessingSystem
                 }
                 queue.Enqueue(job);
                 _currentQueueSize++;
-            }
 
-            _jobAvailable.Release();
-            return _jobHandles[job.Id];
+                _jobAvailable.Release();
+                return handle;
+            }
         }
 
         private Job Dequeue()
