@@ -53,10 +53,14 @@ namespace IndustrialProcessingSystem
                 Console.WriteLine("Submitting initial jobs from config...");
                 foreach (var job in config.InitialJobs)
                 {
-                    var handle = system.Submit(job);
-                    if (handle != null)
+                    try
                     {
+                        var handle = system.Submit(job);
                         Console.WriteLine($"  Submitted [{job.Priority}] {job.Type} - {job.Payload} (Id: {job.Id})");
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        Console.WriteLine($"  [REJECTED] {job.Id}: {ex.Message}");
                     }
                 }
 
@@ -76,6 +80,9 @@ namespace IndustrialProcessingSystem
 
                 Console.WriteLine("System running. Press Enter to exit.");
                 Console.ReadLine();
+
+                system.Dispose();
+                Console.WriteLine("System shut down.");
             }
             catch (Exception ex)
             {
@@ -91,11 +98,15 @@ namespace IndustrialProcessingSystem
                 try
                 {
                     Job job = GenerateRandomJob();
-                    var handle = system.Submit(job);
 
-                    if (handle != null)
+                    try
                     {
+                        var handle = system.Submit(job);
                         Console.WriteLine($"[Producer-{threadIndex}] Submitted {job.Type} [{job.Priority}] - {job.Payload}");
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Queue full, skip this job
                     }
 
                     int delay = _random.Value.Next(500, 3000);
