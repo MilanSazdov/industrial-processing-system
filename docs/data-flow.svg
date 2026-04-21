@@ -1,0 +1,252 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 580" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="dfBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8fafc"/>
+      <stop offset="100%" style="stop-color:#f1f5f9"/>
+    </linearGradient>
+    <linearGradient id="dfBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="dfDark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af"/>
+      <stop offset="100%" style="stop-color:#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="dfGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
+    </linearGradient>
+    <linearGradient id="dfYellow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#eab308"/>
+      <stop offset="100%" style="stop-color:#ca8a04"/>
+    </linearGradient>
+    <linearGradient id="dfRed" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+    <linearGradient id="dfPurple" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="dfCyan" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
+    </linearGradient>
+    <linearGradient id="dfOrange" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316"/>
+      <stop offset="100%" style="stop-color:#ea580c"/>
+    </linearGradient>
+    <filter id="dfSh" x="-3%" y="-3%" width="106%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#00000020"/>
+    </filter>
+    <marker id="dfArr" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="dfArrW" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1020" height="580" rx="12" fill="url(#dfBg)"/>
+
+  <!-- Title -->
+  <text x="510" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#1e293b">Job Lifecycle - Data Flow</text>
+  <text x="510" y="54" text-anchor="middle" font-size="12" fill="#64748b">From XML config / random generation through processing to result delivery and reporting</text>
+
+  <!-- ==================== PHASE LABELS ==================== -->
+  <text x="100" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">SOURCE</text>
+  <text x="290" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">SUBMIT</text>
+  <text x="480" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">QUEUE</text>
+  <text x="660" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">PROCESS</text>
+  <text x="850" y="86" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">OUTPUT</text>
+
+  <!-- Phase dividers -->
+  <line x1="195" y1="76" x2="195" y2="520" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="385" y1="76" x2="385" y2="520" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="570" y1="76" x2="570" y2="520" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+  <line x1="755" y1="76" x2="755" y2="520" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>
+
+  <!-- ==================== SOURCE COLUMN ==================== -->
+  <!-- XML Config -->
+  <g filter="url(#dfSh)">
+    <rect x="22" y="110" width="156" height="64" rx="7" fill="url(#dfCyan)"/>
+    <text x="100" y="136" text-anchor="middle" font-size="12" font-weight="700" fill="white">SystemConfig.xml</text>
+    <text x="100" y="154" text-anchor="middle" font-size="10" fill="#cffafe">LINQ to XML parsing</text>
+    <text x="100" y="168" text-anchor="middle" font-size="9" fill="#a5f3fc">Initial jobs + settings</text>
+  </g>
+
+  <!-- Random Generator -->
+  <g filter="url(#dfSh)">
+    <rect x="22" y="196" width="156" height="64" rx="7" fill="url(#dfOrange)"/>
+    <text x="100" y="222" text-anchor="middle" font-size="12" font-weight="700" fill="white">Producer Threads</text>
+    <text x="100" y="240" text-anchor="middle" font-size="10" fill="#fed7aa">Random job generation</text>
+    <text x="100" y="254" text-anchor="middle" font-size="9" fill="#ffedd5">ThreadLocal&lt;Random&gt;</text>
+  </g>
+
+  <!-- ==================== SUBMIT COLUMN ==================== -->
+  <g filter="url(#dfSh)">
+    <rect x="210" y="110" width="160" height="150" rx="7" fill="url(#dfBlue)"/>
+    <text x="290" y="136" text-anchor="middle" font-size="13" font-weight="700" fill="white">Submit(Job)</text>
+    <line x1="225" y1="145" x2="355" y2="145" stroke="white" stroke-opacity="0.3"/>
+
+    <rect x="222" y="155" width="136" height="24" rx="4" fill="white" fill-opacity="0.15"/>
+    <text x="290" y="172" text-anchor="middle" font-size="10" fill="white">Idempotency check</text>
+
+    <rect x="222" y="185" width="136" height="24" rx="4" fill="white" fill-opacity="0.15"/>
+    <text x="290" y="202" text-anchor="middle" font-size="10" fill="white">Capacity check</text>
+
+    <rect x="222" y="215" width="136" height="24" rx="4" fill="white" fill-opacity="0.15"/>
+    <text x="290" y="232" text-anchor="middle" font-size="10" fill="white">Create TCS + Handle</text>
+  </g>
+
+  <!-- Arrows: Source → Submit -->
+  <line x1="178" y1="142" x2="208" y2="142" stroke="#64748b" stroke-width="1.5" marker-end="url(#dfArr)"/>
+  <line x1="178" y1="228" x2="208" y2="200" stroke="#64748b" stroke-width="1.5" marker-end="url(#dfArr)"/>
+
+  <!-- ==================== QUEUE COLUMN ==================== -->
+  <g filter="url(#dfSh)">
+    <rect x="400" y="105" width="156" height="162" rx="7" fill="url(#dfDark)"/>
+    <text x="478" y="128" text-anchor="middle" font-size="12" font-weight="700" fill="white">Priority Queue</text>
+    <text x="478" y="144" text-anchor="middle" font-size="9" fill="#93c5fd">lock(_queueLock)</text>
+
+    <!-- Priority buckets -->
+    <rect x="415" y="155" width="126" height="22" rx="4" fill="#ef4444" fill-opacity="0.8"/>
+    <text x="478" y="171" text-anchor="middle" font-size="10" font-weight="600" fill="white">Priority 1 (highest)</text>
+
+    <rect x="415" y="181" width="126" height="22" rx="4" fill="#f97316" fill-opacity="0.7"/>
+    <text x="478" y="197" text-anchor="middle" font-size="10" font-weight="600" fill="white">Priority 2</text>
+
+    <rect x="415" y="207" width="126" height="22" rx="4" fill="#eab308" fill-opacity="0.6"/>
+    <text x="478" y="223" text-anchor="middle" font-size="10" font-weight="600" fill="white">Priority 3</text>
+
+    <rect x="415" y="233" width="126" height="22" rx="4" fill="#22c55e" fill-opacity="0.5"/>
+    <text x="478" y="249" text-anchor="middle" font-size="10" font-weight="600" fill="white">Priority N (lowest)</text>
+  </g>
+
+  <!-- Arrow: Submit → Queue -->
+  <line x1="370" y1="185" x2="398" y2="185" stroke="#64748b" stroke-width="1.5" marker-end="url(#dfArr)"/>
+
+  <!-- SemaphoreSlim signal -->
+  <g filter="url(#dfSh)">
+    <rect x="400" y="285" width="156" height="36" rx="6" fill="url(#dfPurple)"/>
+    <text x="478" y="308" text-anchor="middle" font-size="11" font-weight="600" fill="white">SemaphoreSlim.Release()</text>
+  </g>
+  <line x1="478" y1="267" x2="478" y2="283" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#dfArr)"/>
+
+  <!-- ==================== PROCESS COLUMN ==================== -->
+  <g filter="url(#dfSh)">
+    <rect x="585" y="105" width="156" height="56" rx="7" fill="url(#dfBlue)"/>
+    <text x="663" y="128" text-anchor="middle" font-size="12" font-weight="700" fill="white">Worker Thread</text>
+    <text x="663" y="148" text-anchor="middle" font-size="10" fill="#bfdbfe">Dequeue() + Execute</text>
+  </g>
+
+  <!-- Arrow: Queue → Worker -->
+  <line x1="556" y1="155" x2="583" y2="133" stroke="#64748b" stroke-width="1.5" marker-end="url(#dfArr)"/>
+
+  <!-- Timeout race -->
+  <g filter="url(#dfSh)">
+    <rect x="585" y="178" width="156" height="44" rx="7" fill="url(#dfYellow)"/>
+    <text x="663" y="198" text-anchor="middle" font-size="11" font-weight="700" fill="white">Task.WhenAny Race</text>
+    <text x="663" y="214" text-anchor="middle" font-size="9" fill="#fef9c3">2s timeout vs execution</text>
+  </g>
+  <line x1="663" y1="161" x2="663" y2="176" stroke="#64748b" stroke-width="1.5" marker-end="url(#dfArr)"/>
+
+  <!-- Success -->
+  <g filter="url(#dfSh)">
+    <rect x="585" y="240" width="73" height="36" rx="6" fill="url(#dfGreen)"/>
+    <text x="621" y="263" text-anchor="middle" font-size="11" font-weight="700" fill="white">OK</text>
+  </g>
+  <line x1="630" y1="222" x2="621" y2="238" stroke="#22c55e" stroke-width="1.5" marker-end="url(#dfArr)"/>
+
+  <!-- Fail / Retry -->
+  <g filter="url(#dfSh)">
+    <rect x="668" y="240" width="73" height="36" rx="6" fill="url(#dfRed)"/>
+    <text x="704" y="258" text-anchor="middle" font-size="10" font-weight="700" fill="white">FAIL</text>
+    <text x="704" y="271" text-anchor="middle" font-size="8" fill="#fecaca">retry x3</text>
+  </g>
+  <line x1="696" y1="222" x2="704" y2="238" stroke="#ef4444" stroke-width="1.5" marker-end="url(#dfArr)"/>
+
+  <!-- Execution record -->
+  <g filter="url(#dfSh)">
+    <rect x="585" y="298" width="156" height="36" rx="6" fill="#475569"/>
+    <text x="663" y="321" text-anchor="middle" font-size="11" font-weight="600" fill="white">JobExecutionRecord</text>
+  </g>
+  <line x1="621" y1="276" x2="640" y2="296" stroke="#64748b" stroke-width="1.2" marker-end="url(#dfArr)"/>
+  <line x1="704" y1="276" x2="686" y2="296" stroke="#64748b" stroke-width="1.2" marker-end="url(#dfArr)"/>
+
+  <!-- ==================== OUTPUT COLUMN ==================== -->
+  <!-- JobHandle result -->
+  <g filter="url(#dfSh)">
+    <rect x="770" y="105" width="220" height="56" rx="7" fill="url(#dfYellow)"/>
+    <text x="880" y="128" text-anchor="middle" font-size="12" font-weight="700" fill="white">JobHandle.Result</text>
+    <text x="880" y="148" text-anchor="middle" font-size="10" fill="#fef9c3">tcs.TrySetResult(int) / TrySetException</text>
+  </g>
+  <line x1="658" y1="258" x2="768" y2="133" stroke="#22c55e" stroke-width="1.5" marker-end="url(#dfArr)" stroke-dasharray="5,3"/>
+
+  <!-- Events -->
+  <g filter="url(#dfSh)">
+    <rect x="770" y="178" width="220" height="44" rx="7" fill="url(#dfGreen)"/>
+    <text x="880" y="198" text-anchor="middle" font-size="12" font-weight="700" fill="white">JobCompleted Event</text>
+    <text x="880" y="214" text-anchor="middle" font-size="10" fill="#dcfce7">Action&lt;Guid, int&gt;</text>
+  </g>
+
+  <g filter="url(#dfSh)">
+    <rect x="770" y="230" width="220" height="44" rx="7" fill="url(#dfRed)"/>
+    <text x="880" y="250" text-anchor="middle" font-size="12" font-weight="700" fill="white">JobFailed / Aborted</text>
+    <text x="880" y="266" text-anchor="middle" font-size="10" fill="#fecaca">Action&lt;Guid, string&gt;</text>
+  </g>
+
+  <!-- jobs.log -->
+  <g filter="url(#dfSh)">
+    <rect x="770" y="296" width="220" height="44" rx="7" fill="url(#dfPurple)"/>
+    <text x="880" y="316" text-anchor="middle" font-size="12" font-weight="700" fill="white">jobs.log</text>
+    <text x="880" y="332" text-anchor="middle" font-size="10" fill="#e9d5ff">Async append (SemaphoreSlim)</text>
+  </g>
+  <line x1="880" y1="274" x2="880" y2="294" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#dfArr)"/>
+
+  <!-- LINQ Reports -->
+  <g filter="url(#dfSh)">
+    <rect x="770" y="358" width="220" height="64" rx="7" fill="url(#dfCyan)"/>
+    <text x="880" y="381" text-anchor="middle" font-size="12" font-weight="700" fill="white">LINQ XML Reports</text>
+    <text x="880" y="399" text-anchor="middle" font-size="10" fill="#cffafe">report_{n % 10}.xml</text>
+    <text x="880" y="414" text-anchor="middle" font-size="9" fill="#a5f3fc">Timer fires every 60s</text>
+  </g>
+  <line x1="741" y1="316" x2="768" y2="370" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#dfArr)" stroke-dasharray="5,3"/>
+
+  <!-- Arrow: Worker success → Events -->
+  <line x1="658" y1="258" x2="768" y2="200" stroke="#22c55e" stroke-width="1.2" marker-end="url(#dfArr)" stroke-dasharray="4,3"/>
+  <line x1="741" y1="258" x2="768" y2="252" stroke="#ef4444" stroke-width="1.2" marker-end="url(#dfArr)" stroke-dasharray="4,3"/>
+
+  <!-- ==================== BOTTOM: Rejected path ==================== -->
+  <g filter="url(#dfSh)">
+    <rect x="210" y="290" width="160" height="40" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>
+    <text x="290" y="310" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">Queue Full</text>
+    <text x="290" y="324" text-anchor="middle" font-size="9" fill="#ef4444">InvalidOperationException</text>
+  </g>
+  <line x1="290" y1="260" x2="290" y2="288" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#dfArr)"/>
+
+  <!-- Idempotent path -->
+  <g filter="url(#dfSh)">
+    <rect x="210" y="348" width="160" height="40" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.5"/>
+    <text x="290" y="368" text-anchor="middle" font-size="11" font-weight="600" fill="#15803d">Duplicate Job</text>
+    <text x="290" y="382" text-anchor="middle" font-size="9" fill="#22c55e">Return existing JobHandle</text>
+  </g>
+
+  <!-- ==================== BOTTOM LEGEND ==================== -->
+  <rect x="30" y="538" width="960" height="30" rx="6" fill="white" fill-opacity="0.6" stroke="#e2e8f0" stroke-width="1"/>
+  <line x1="50" y1="553" x2="85" y2="553" stroke="#64748b" stroke-width="2" marker-end="url(#dfArr)"/>
+  <text x="92" y="558" font-size="10" fill="#475569">Synchronous flow</text>
+  <line x1="230" y1="553" x2="265" y2="553" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#dfArrW)"/>
+  <text x="272" y="558" font-size="10" fill="#475569">Async / event-driven</text>
+  <rect x="430" y="547" width="12" height="12" rx="2" fill="url(#dfGreen)"/>
+  <text x="448" y="558" font-size="10" fill="#475569">Success path</text>
+  <rect x="540" y="547" width="12" height="12" rx="2" fill="url(#dfRed)"/>
+  <text x="558" y="558" font-size="10" fill="#475569">Failure path</text>
+  <rect x="640" y="547" width="12" height="12" rx="2" fill="url(#dfPurple)"/>
+  <text x="658" y="558" font-size="10" fill="#475569">Logging</text>
+  <rect x="720" y="547" width="12" height="12" rx="2" fill="url(#dfCyan)"/>
+  <text x="738" y="558" font-size="10" fill="#475569">Reports / Config</text>
+  <rect x="830" y="547" width="12" height="12" rx="2" fill="url(#dfYellow)"/>
+  <text x="848" y="558" font-size="10" fill="#475569">Async result (TCS)</text>
+</svg>

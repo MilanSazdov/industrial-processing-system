@@ -1,0 +1,254 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 820" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f4f8;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#e2e8f0;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="producerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="systemGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="primeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="ioGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="eventSuccessGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#15803d;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="eventFailGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="tcsGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#eab308;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#ca8a04;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="logGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="reportGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1"/>
+    </linearGradient>
+    <filter id="shadow" x="-4%" y="-4%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000025"/>
+    </filter>
+    <filter id="shadowLight" x="-4%" y="-4%" width="108%" height="116%">
+      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#00000015"/>
+    </filter>
+    <marker id="arrowGray" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6"/>
+    </marker>
+    <marker id="arrowGreen" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+    <marker id="arrowRed" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="820" rx="12" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="500" y="38" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b">Industrial Processing System</text>
+  <text x="500" y="58" text-anchor="middle" font-size="13" fill="#64748b">Async Producer-Consumer Architecture with Priority Queue</text>
+
+  <!-- ==================== PRODUCERS ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="300" y="78" width="400" height="52" rx="8" fill="url(#producerGrad)"/>
+    <text x="500" y="101" text-anchor="middle" font-size="15" font-weight="700" fill="white">Producer Threads (N)</text>
+    <text x="500" y="119" text-anchor="middle" font-size="11" fill="#bfdbfe">Each thread randomly generates and submits jobs</text>
+  </g>
+
+  <!-- Arrow: Producers → System -->
+  <line x1="500" y1="130" x2="500" y2="165" stroke="#64748b" stroke-width="2" marker-end="url(#arrowGray)"/>
+  <text x="530" y="152" font-size="11" fill="#475569" font-weight="600" font-style="italic">Submit(Job)</text>
+
+  <!-- ==================== PROCESSING SYSTEM BOX ==================== -->
+  <g filter="url(#shadow)">
+    <rect x="200" y="170" width="600" height="210" rx="10" fill="url(#systemGrad)"/>
+    <text x="500" y="196" text-anchor="middle" font-size="17" font-weight="700" fill="white">ProcessingSystem</text>
+
+    <!-- Priority Queue -->
+    <rect x="230" y="210" width="240" height="44" rx="6" fill="white" fill-opacity="0.15" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="350" y="230" text-anchor="middle" font-size="12" font-weight="600" fill="white">Thread-Safe Priority Queue</text>
+    <text x="350" y="245" text-anchor="middle" font-size="10" fill="#93c5fd">SortedDictionary&lt;int, Queue&lt;Job&gt;&gt;</text>
+
+    <!-- MaxQueueSize -->
+    <rect x="230" y="262" width="240" height="30" rx="6" fill="white" fill-opacity="0.15" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="350" y="282" text-anchor="middle" font-size="12" font-weight="600" fill="white">MaxQueueSize Limit</text>
+
+    <!-- Idempotency -->
+    <rect x="230" y="300" width="240" height="44" rx="6" fill="white" fill-opacity="0.15" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="350" y="320" text-anchor="middle" font-size="12" font-weight="600" fill="white">Idempotency Check</text>
+    <text x="350" y="336" text-anchor="middle" font-size="10" fill="#93c5fd">ConcurrentDictionary&lt;Guid, JobHandle&gt;</text>
+
+    <!-- Worker Pool -->
+    <rect x="530" y="210" width="240" height="134" rx="6" fill="white" fill-opacity="0.15" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="650" y="233" text-anchor="middle" font-size="12" font-weight="600" fill="white">Worker Pool</text>
+
+    <rect x="548" y="245" width="90" height="28" rx="4" fill="#3b82f6" fill-opacity="0.5" stroke="white" stroke-opacity="0.4" stroke-width="1"/>
+    <text x="593" y="264" text-anchor="middle" font-size="10" font-weight="600" fill="white">Worker-0</text>
+
+    <rect x="648" y="245" width="90" height="28" rx="4" fill="#3b82f6" fill-opacity="0.5" stroke="white" stroke-opacity="0.4" stroke-width="1"/>
+    <text x="693" y="264" text-anchor="middle" font-size="10" font-weight="600" fill="white">Worker-1</text>
+
+    <rect x="548" y="281" width="90" height="28" rx="4" fill="#3b82f6" fill-opacity="0.5" stroke="white" stroke-opacity="0.4" stroke-width="1"/>
+    <text x="593" y="300" text-anchor="middle" font-size="10" font-weight="600" fill="white">Worker-2</text>
+
+    <rect x="648" y="281" width="90" height="28" rx="4" fill="#3b82f6" fill-opacity="0.5" stroke="white" stroke-opacity="0.4" stroke-width="1"/>
+    <text x="693" y="300" text-anchor="middle" font-size="10" font-weight="600" fill="white">Worker-...</text>
+
+    <text x="650" y="330" text-anchor="middle" font-size="10" fill="#93c5fd">SemaphoreSlim signaling</text>
+  </g>
+
+  <!-- Arrow: Queue → Workers (internal) -->
+  <line x1="470" y1="280" x2="528" y2="265" stroke="white" stroke-opacity="0.5" stroke-width="1.5" marker-end="url(#arrowGray)" stroke-dasharray="4,3"/>
+
+  <!-- Arrow: System → Job types -->
+  <line x1="350" y1="380" x2="350" y2="420" stroke="#64748b" stroke-width="2" marker-end="url(#arrowGray)"/>
+  <text x="310" y="406" font-size="11" fill="#475569" font-weight="600" font-style="italic">Dequeue()</text>
+
+  <!-- ==================== JOB TYPES ==================== -->
+  <!-- Prime Job -->
+  <g filter="url(#shadowLight)">
+    <rect x="110" y="425" width="220" height="70" rx="8" fill="url(#primeGrad)"/>
+    <text x="220" y="452" text-anchor="middle" font-size="14" font-weight="700" fill="white">Prime Job</text>
+    <text x="220" y="471" text-anchor="middle" font-size="11" fill="#fed7aa">CPU-Bound Calculations</text>
+    <text x="220" y="486" text-anchor="middle" font-size="10" fill="#ffedd5">Parallel trial division (sqrt n)</text>
+  </g>
+
+  <!-- IO Job -->
+  <g filter="url(#shadowLight)">
+    <rect x="365" y="425" width="220" height="70" rx="8" fill="url(#ioGrad)"/>
+    <text x="475" y="452" text-anchor="middle" font-size="14" font-weight="700" fill="white">IO Job</text>
+    <text x="475" y="471" text-anchor="middle" font-size="11" fill="#bbf7d0">Simulated I/O Delay</text>
+    <text x="475" y="486" text-anchor="middle" font-size="10" fill="#dcfce7">Thread.Sleep with cancellation</text>
+  </g>
+
+  <!-- ==================== EVENTS ==================== -->
+  <!-- JobCompleted Event -->
+  <g filter="url(#shadowLight)">
+    <rect x="680" y="410" width="200" height="38" rx="6" fill="url(#eventSuccessGrad)"/>
+    <text x="780" y="434" text-anchor="middle" font-size="12" font-weight="700" fill="white">JobCompleted Event</text>
+  </g>
+
+  <!-- JobFailed Event -->
+  <g filter="url(#shadowLight)">
+    <rect x="680" y="456" width="200" height="38" rx="6" fill="url(#eventFailGrad)"/>
+    <text x="780" y="480" text-anchor="middle" font-size="12" font-weight="700" fill="white">JobFailed Event</text>
+  </g>
+
+  <!-- Arrows: Jobs → Events -->
+  <line x1="585" y1="445" x2="678" y2="430" stroke="#22c55e" stroke-width="1.5" marker-end="url(#arrowGreen)" stroke-dasharray="5,3"/>
+  <line x1="585" y1="470" x2="678" y2="474" stroke="#ef4444" stroke-width="1.5" marker-end="url(#arrowRed)" stroke-dasharray="5,3"/>
+
+  <!-- ==================== TCS / JobHandle ==================== -->
+  <g filter="url(#shadowLight)">
+    <rect x="190" y="530" width="320" height="46" rx="8" fill="url(#tcsGrad)"/>
+    <text x="350" y="552" text-anchor="middle" font-size="13" font-weight="700" fill="white">TaskCompletionSource&lt;int&gt;</text>
+    <text x="350" y="568" text-anchor="middle" font-size="11" fill="#fef9c3">JobHandle wraps the awaitable Task</text>
+  </g>
+
+  <!-- Arrows: Jobs → TCS -->
+  <line x1="220" y1="495" x2="280" y2="528" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+  <line x1="475" y1="495" x2="420" y2="528" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowGray)"/>
+
+  <!-- ==================== CLIENT ==================== -->
+  <g filter="url(#shadowLight)">
+    <rect x="275" y="615" width="150" height="46" rx="8" fill="#f59e0b" stroke="#d97706" stroke-width="1"/>
+    <text x="350" y="637" text-anchor="middle" font-size="13" font-weight="700" fill="white">Client</text>
+    <text x="350" y="653" text-anchor="middle" font-size="11" fill="#fef3c7">Await Result</text>
+  </g>
+
+  <!-- Arrow: TCS → Client -->
+  <line x1="350" y1="576" x2="350" y2="613" stroke="#64748b" stroke-width="2" marker-end="url(#arrowGray)"/>
+
+  <!-- ==================== ASYNC LOG ==================== -->
+  <g filter="url(#shadowLight)">
+    <rect x="680" y="530" width="200" height="46" rx="8" fill="url(#logGrad)"/>
+    <text x="780" y="552" text-anchor="middle" font-size="13" font-weight="700" fill="white">Async File Logger</text>
+    <text x="780" y="567" text-anchor="middle" font-size="11" fill="#e9d5ff">jobs.log (SemaphoreSlim)</text>
+  </g>
+
+  <!-- Arrow: Events → Log -->
+  <line x1="780" y1="494" x2="780" y2="528" stroke="#8b5cf6" stroke-width="1.5" marker-end="url(#arrowPurple)"/>
+
+  <!-- ==================== REPORT SYSTEM ==================== -->
+  <g filter="url(#shadowLight)">
+    <rect x="680" y="615" width="200" height="62" rx="8" fill="url(#reportGrad)"/>
+    <text x="780" y="637" text-anchor="middle" font-size="13" font-weight="700" fill="white">LINQ Report Timer</text>
+    <text x="780" y="653" text-anchor="middle" font-size="11" fill="#cffafe">Every 60s via System.Threading.Timer</text>
+    <text x="780" y="668" text-anchor="middle" font-size="10" fill="#a5f3fc">report_0.xml ... report_9.xml</text>
+  </g>
+
+  <!-- Arrow: Log → Report -->
+  <line x1="780" y1="576" x2="780" y2="613" stroke="#06b6d4" stroke-width="1.5" marker-end="url(#arrowGray)" stroke-dasharray="5,3"/>
+
+  <!-- ==================== CONFIG BOX ==================== -->
+  <g filter="url(#shadowLight)">
+    <rect x="30" y="165" width="145" height="100" rx="8" fill="white" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="102" y="190" text-anchor="middle" font-size="12" font-weight="700" fill="#334155">SystemConfig.xml</text>
+    <line x1="42" y1="198" x2="163" y2="198" stroke="#e2e8f0" stroke-width="1"/>
+    <text x="102" y="216" text-anchor="middle" font-size="10" fill="#64748b">WorkerCount: 5</text>
+    <text x="102" y="232" text-anchor="middle" font-size="10" fill="#64748b">MaxQueueSize: 100</text>
+    <text x="102" y="248" text-anchor="middle" font-size="10" fill="#64748b">InitialJobs: [...]</text>
+  </g>
+
+  <!-- Arrow: Config → System -->
+  <line x1="175" y1="230" x2="198" y2="250" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrowGray)" stroke-dasharray="4,3"/>
+
+  <!-- ==================== LEGEND ==================== -->
+  <rect x="30" y="710" width="940" height="94" rx="8" fill="white" fill-opacity="0.7" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="500" y="732" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">Legend</text>
+
+  <rect x="60" y="745" width="18" height="14" rx="3" fill="url(#producerGrad)"/>
+  <text x="86" y="757" font-size="11" fill="#475569">Producer Threads</text>
+
+  <rect x="220" y="745" width="18" height="14" rx="3" fill="url(#systemGrad)"/>
+  <text x="246" y="757" font-size="11" fill="#475569">Processing Engine</text>
+
+  <rect x="400" y="745" width="18" height="14" rx="3" fill="url(#primeGrad)"/>
+  <text x="426" y="757" font-size="11" fill="#475569">CPU-Bound Job</text>
+
+  <rect x="550" y="745" width="18" height="14" rx="3" fill="url(#ioGrad)"/>
+  <text x="576" y="757" font-size="11" fill="#475569">I/O-Bound Job</text>
+
+  <rect x="700" y="745" width="18" height="14" rx="3" fill="url(#eventSuccessGrad)"/>
+  <text x="726" y="757" font-size="11" fill="#475569">Success Event</text>
+
+  <rect x="840" y="745" width="18" height="14" rx="3" fill="url(#eventFailGrad)"/>
+  <text x="866" y="757" font-size="11" fill="#475569">Failure Event</text>
+
+  <rect x="60" y="770" width="18" height="14" rx="3" fill="url(#tcsGrad)"/>
+  <text x="86" y="782" font-size="11" fill="#475569">Async Result (TCS)</text>
+
+  <rect x="220" y="770" width="18" height="14" rx="3" fill="url(#logGrad)"/>
+  <text x="246" y="782" font-size="11" fill="#475569">File Logger</text>
+
+  <rect x="400" y="770" width="18" height="14" rx="3" fill="url(#reportGrad)"/>
+  <text x="426" y="782" font-size="11" fill="#475569">LINQ Reports</text>
+
+  <line x1="570" y1="777" x2="620" y2="777" stroke="#64748b" stroke-width="2" marker-end="url(#arrowGray)"/>
+  <text x="632" y="782" font-size="11" fill="#475569">Data flow</text>
+
+  <line x1="750" y1="777" x2="800" y2="777" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrowGray)"/>
+  <text x="812" y="782" font-size="11" fill="#475569">Async / signal</text>
+</svg>

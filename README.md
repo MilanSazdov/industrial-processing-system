@@ -2,8 +2,6 @@
 
 A thread-safe C# console application that simulates industrial job processing using an **async producer-consumer architecture** with a priority queue, event-driven logging, retry logic, and idempotency guarantees.
 
-Built as a university assignment for the **SNUS (Sistemski i Namenski Upravljacki Softver)** course — Colloquium 1, 2026.
-
 ---
 
 ## Table of Contents
@@ -46,60 +44,15 @@ The system implements a **ProcessingSystem** service that accepts industrial job
 
 ## Architecture
 
-```
-                    +---------------------------------+
-                    |   Main Thread (N Producers)      |
-                    |   Each thread randomly generates  |
-                    |   and submits new jobs            |
-                    +----------------+----------------+
-                                     |
-                                Submit(Job)
-                                     |
-                                     v
-                    +---------------------------------+
-                    |       ProcessingSystem           |
-                    |  +---------------------------+  |
-                    |  | Thread-Safe Priority Queue |  |
-                    |  | SortedDictionary<int,      |  |
-                    |  |     Queue<Job>>             |  |
-                    |  +---------------------------+  |
-                    |  | MaxQueueSize Limit         |  |
-                    |  +---------------------------+  |
-                    |  | Idempotency Check          |  |
-                    |  | ConcurrentDictionary       |  |
-                    |  +---------------------------+  |
-                    +--------+---------------+--------+
-                             |               |
-                        Dequeue()       Dequeue()
-                             |               |
-                             v               v
-                    +--------+--+   +--------+--+
-                    | Worker-0  |   | Worker-N  |     N background
-                    | Thread    |   | Thread    |     threads
-                    +-----------+   +-----------+
-                             |               |
-                +------------+---+---+-------+--------+
-                |                |                     |
-                v                v                     v
-        +-------+------+  +-----+--------+   +--------+-------+
-        |  Prime Job   |  |   IO Job     |   | Job Completed  |
-        |  CPU-bound   |  |  Simulated   |   |    Event       |
-        | prime count  |  |  I/O delay   |   +--------+-------+
-        |  (parallel)  |  | Thread.Sleep |            |
-        +-------+------+  +-----+--------+   +--------+-------+
-                |                |            | Job Failed     |
-                v                v            |    Event       |
-        +-------+----------------+--+         +--------+-------+
-        | TaskCompletionSource<int> |                  |
-        |      (JobHandle)          |                  v
-        +-------+------------------+         +--------+-------+
-                |                            | Async File Log |
-                v                            | (jobs.log)     |
-        +-------+------+                    +----------------+
-        |    Client    |
-        | (Await Result)|
-        +--------------+
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="System Architecture" width="100%"/>
+</p>
+
+### Job Lifecycle
+
+<p align="center">
+  <img src="docs/data-flow.svg" alt="Job Lifecycle Data Flow" width="100%"/>
+</p>
 
 ---
 
@@ -251,6 +204,10 @@ Note: IO jobs with `delay > 2000ms` will **always timeout** due to the 2-second 
 
 ### Retry and Timeout
 
+<p align="center">
+  <img src="docs/retry-flow.svg" alt="Retry and Timeout Flow" width="90%"/>
+</p>
+
 Each job attempt follows the **race pattern**:
 
 ```
@@ -370,6 +327,10 @@ Parsed by `SystemConfigLoader` using LINQ to XML query expressions.
 ---
 
 ## Thread Safety
+
+<p align="center">
+  <img src="docs/thread-safety.svg" alt="Thread Safety Model" width="100%"/>
+</p>
 
 Every shared resource is protected by an appropriate synchronization primitive:
 

@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 720" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="rfBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f8fafc;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#f1f5f9;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="rfBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#2563eb"/>
+    </linearGradient>
+    <linearGradient id="rfGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
+    </linearGradient>
+    <linearGradient id="rfOrange" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316"/>
+      <stop offset="100%" style="stop-color:#ea580c"/>
+    </linearGradient>
+    <linearGradient id="rfRed" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+    <linearGradient id="rfPurple" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="rfYellow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#eab308"/>
+      <stop offset="100%" style="stop-color:#ca8a04"/>
+    </linearGradient>
+    <linearGradient id="rfSlate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#64748b"/>
+      <stop offset="100%" style="stop-color:#475569"/>
+    </linearGradient>
+    <filter id="rfShadow" x="-3%" y="-3%" width="106%" height="112%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#00000020"/>
+    </filter>
+    <marker id="rfArr" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+    </marker>
+    <marker id="rfArrG" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
+    <marker id="rfArrR" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
+    </marker>
+    <marker id="rfArrO" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#f97316"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="880" height="720" rx="12" fill="url(#rfBg)"/>
+
+  <!-- Title -->
+  <text x="440" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#1e293b">Retry and Timeout Flow</text>
+  <text x="440" y="56" text-anchor="middle" font-size="12" fill="#64748b">2-second timeout per attempt, 3 attempts max, Task.WhenAny race pattern</text>
+
+  <!-- ==================== START ==================== -->
+  <g filter="url(#rfShadow)">
+    <rect x="330" y="78" width="220" height="42" rx="21" fill="url(#rfBlue)"/>
+    <text x="440" y="104" text-anchor="middle" font-size="14" font-weight="700" fill="white">Worker picks Job</text>
+  </g>
+
+  <line x1="440" y1="120" x2="440" y2="148" stroke="#64748b" stroke-width="2" marker-end="url(#rfArr)"/>
+
+  <!-- ==================== ATTEMPT LOOP BOX ==================== -->
+  <rect x="60" y="152" width="760" height="380" rx="10" fill="white" fill-opacity="0.5" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="80" y="175" font-size="13" font-weight="700" fill="#475569">for attempt = 1 to 3</text>
+
+  <!-- Task.Run -->
+  <g filter="url(#rfShadow)">
+    <rect x="115" y="192" width="260" height="48" rx="7" fill="url(#rfPurple)"/>
+    <text x="245" y="215" text-anchor="middle" font-size="13" font-weight="600" fill="white">Task.Run(() => ExecuteJob)</text>
+    <text x="245" y="231" text-anchor="middle" font-size="10" fill="#ddd6fe">processingTask</text>
+  </g>
+
+  <!-- Task.Delay -->
+  <g filter="url(#rfShadow)">
+    <rect x="505" y="192" width="260" height="48" rx="7" fill="url(#rfOrange)"/>
+    <text x="635" y="215" text-anchor="middle" font-size="13" font-weight="600" fill="white">Task.Delay(2000ms)</text>
+    <text x="635" y="231" text-anchor="middle" font-size="10" fill="#fed7aa">timeoutTask</text>
+  </g>
+
+  <!-- Arrows to WhenAny -->
+  <line x1="245" y1="240" x2="370" y2="276" stroke="#64748b" stroke-width="1.5" marker-end="url(#rfArr)"/>
+  <line x1="635" y1="240" x2="510" y2="276" stroke="#64748b" stroke-width="1.5" marker-end="url(#rfArr)"/>
+
+  <!-- WhenAny diamond -->
+  <g filter="url(#rfShadow)">
+    <polygon points="440,272 530,305 440,338 350,305" fill="url(#rfYellow)" stroke="#a16207" stroke-width="1"/>
+    <text x="440" y="302" text-anchor="middle" font-size="12" font-weight="700" fill="white">Task</text>
+    <text x="440" y="316" text-anchor="middle" font-size="12" font-weight="700" fill="white">.WhenAny</text>
+  </g>
+
+  <!-- ==================== SUCCESS PATH (LEFT) ==================== -->
+  <line x1="350" y1="305" x2="230" y2="305" stroke="#22c55e" stroke-width="2" marker-end="url(#rfArrG)"/>
+  <text x="285" y="296" text-anchor="middle" font-size="11" font-weight="600" fill="#16a34a">processingTask wins</text>
+
+  <g filter="url(#rfShadow)">
+    <rect x="90" y="365" width="280" height="150" rx="8" fill="url(#rfGreen)"/>
+    <text x="230" y="390" text-anchor="middle" font-size="14" font-weight="700" fill="white">SUCCESS</text>
+    <line x1="110" y1="400" x2="350" y2="400" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="120" y="422" font-size="11" fill="#dcfce7">1. Record execution log (success)</text>
+    <text x="120" y="442" font-size="11" fill="#dcfce7">2. tcs.TrySetResult(result)</text>
+    <text x="120" y="462" font-size="11" fill="#dcfce7">3. Fire JobCompleted event</text>
+    <text x="120" y="482" font-size="11" fill="#dcfce7">4. Clean up dictionaries</text>
+    <text x="120" y="502" font-size="11" fill="#dcfce7">5. Return (done)</text>
+  </g>
+
+  <!-- Arrow from diamond left to success box -->
+  <line x1="230" y1="317" x2="230" y2="363" stroke="#22c55e" stroke-width="2" marker-end="url(#rfArrG)"/>
+
+  <!-- ==================== TIMEOUT PATH (RIGHT) ==================== -->
+  <line x1="530" y1="305" x2="650" y2="305" stroke="#ef4444" stroke-width="2" marker-end="url(#rfArrR)"/>
+  <text x="595" y="296" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">timeoutTask wins</text>
+
+  <g filter="url(#rfShadow)">
+    <rect x="510" y="365" width="280" height="150" rx="8" fill="url(#rfSlate)"/>
+    <text x="650" y="390" text-anchor="middle" font-size="14" font-weight="700" fill="white">TIMEOUT / FAULT</text>
+    <line x1="530" y1="400" x2="770" y2="400" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="530" y="422" font-size="11" fill="#e2e8f0">1. Cancel the attempt (CTS)</text>
+    <text x="530" y="442" font-size="11" fill="#e2e8f0">2. Wait for task to finish</text>
+    <text x="530" y="462" font-size="11" fill="#e2e8f0">3. Record execution log (fail)</text>
+    <text x="530" y="482" font-size="11" fill="#e2e8f0">4. Fire JobFailed event</text>
+    <text x="530" y="502" font-size="11" fill="#e2e8f0">5. Check: attempt &lt; 3 ?</text>
+  </g>
+
+  <!-- Arrow from diamond right to timeout box -->
+  <line x1="650" y1="317" x2="650" y2="363" stroke="#ef4444" stroke-width="2" marker-end="url(#rfArrR)"/>
+
+  <!-- ==================== RETRY ARROW ==================== -->
+  <path d="M 790 440 Q 830 440 830 305 Q 830 192 765 192" fill="none" stroke="#f97316" stroke-width="2" marker-end="url(#rfArrO)" stroke-dasharray="6,3"/>
+  <text x="842" y="320" font-size="11" font-weight="600" fill="#ea580c" transform="rotate(90,842,320)">Retry</text>
+
+  <!-- ==================== ABORT (BELOW) ==================== -->
+  <line x1="650" y1="515" x2="650" y2="548" stroke="#64748b" stroke-width="2" marker-end="url(#rfArr)"/>
+  <text x="665" y="537" font-size="11" font-weight="600" fill="#475569">attempt == 3</text>
+
+  <g filter="url(#rfShadow)">
+    <rect x="510" y="553" width="280" height="100" rx="8" fill="url(#rfRed)"/>
+    <text x="650" y="578" text-anchor="middle" font-size="14" font-weight="700" fill="white">ABORT</text>
+    <line x1="530" y1="588" x2="770" y2="588" stroke="white" stroke-opacity="0.3" stroke-width="1"/>
+    <text x="530" y="609" font-size="11" fill="#fecaca">1. Fire JobAborted event</text>
+    <text x="530" y="629" font-size="11" fill="#fecaca">2. tcs.TrySetException(TimeoutException)</text>
+    <text x="530" y="649" font-size="11" fill="#fecaca">3. Clean up dictionaries</text>
+  </g>
+
+  <!-- ==================== BOTTOM LABELS ==================== -->
+  <rect x="90" y="670" width="700" height="36" rx="6" fill="white" fill-opacity="0.6" stroke="#cbd5e1" stroke-width="1"/>
+  <text x="440" y="693" text-anchor="middle" font-size="12" fill="#475569">
+    Each attempt uses a linked CancellationTokenSource — cancelling Task.Delay on success avoids timer leaks
+  </text>
+</svg>
